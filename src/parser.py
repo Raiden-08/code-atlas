@@ -39,11 +39,28 @@ def extract_function_details(node, source_bytes,file_path):
                 string_node = first_sentence.children[0]
                 docstr = source_bytes[string_node.start_byte : string_node.end_byte].decode("utf-8")
                 docstring = docstr.strip('\'"')
-                
+    
+    def extract_calls(node, source_bytes):
+        calls = []
+        def walk(n):
+            if n.type == "call":
+                func_node = n.child_by_field_name("function")
+                if func_node and func_node.type == "identifier":
+                    func_name = source_bytes[
+                        func_node.start_byte:func_node.end_byte
+                    ].decode("utf-8")
+                    calls.append(func_name)
+            for child in n.children:
+                walk(child)
+        walk(node)
+        return calls 
+    
+    calls = extract_calls(node, source_bytes)         
     return {
         "name" : func_name,
         "code" : full_code,
         "docstring" : docstring,
         "filepath" : file_path,
-        "line" : node.start_point[0] + 1 
+        "line" : node.start_point[0] + 1,
+        "calls": calls
     } 
